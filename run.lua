@@ -5,7 +5,7 @@ local ffi = require 'ffi'
 local glCallOrRun = require 'gl.call'
 require 'ext'
 
-local App = require 'glapp.orbit'(require 'imguiapp')
+local App = class(require 'glapp.orbit'(require 'imguiapp'))
 
 App.title = 'prime spiral'
 
