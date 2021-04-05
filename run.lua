@@ -5,30 +5,100 @@ local ffi = require 'ffi'
 local glCallOrRun = require 'gl.call'
 require 'ext'
 
-local App = class(require 'glapp.orbit'(require 'imguiapp'))
-
-App.title = 'prime spiral'
-
-function App:initGL(...)
-	App.super.initGL(self, ...)
-	self.view.ortho = true
-end
-
-local max = ffi.new('int[1]', 100000)
-local pointsize = ffi.new('float[1]', 7)
 
 local function polar(r, theta)
 	return r * math.cos(theta), r * math.sin(theta)
 end
 
+local function polar1(u)
+	return polar(u, u)
+end
+
+local _2pi = math.pi * 2
+
 local function I(x) return x end
 
 --local f = polar:o_n(I)
-local function f(n) return polar(n, n) end
+--local f = polar1
 --local function f(n) return polar(math.exp(n), n) end
 --local function f(n) return polar(n, math.log(n)) end
 --local function f(n) return polar(1/n, n) end
 --local function f(n) return polar(n, math.pi * math.sin(n)) end
+
+--[[ S_n of u_n for ulam spiral, mapping (r, phi) = (u_n, S_n)
+local function ulam_map(u_n)
+	local S_n = 2.5714474995 * u_n - _2pi * math.floor(2.5714474995 * u_n / _2pi)
+	return polar(u_n, S_n)
+end
+--]]
+local function ulam_map(u)
+	return polar1(2.5714474995 * u)
+end
+
+local generators = table{
+	{
+		name = 'prime',
+		build = function(max)
+			local seq = table()
+			for n=1,math.huge do
+				if n:isprime() then
+					seq:insert(n)
+					if #seq >= max then break end
+				end
+			end
+			return seq
+		end,
+		map = polar1,
+	},
+	{
+		name = 'ulam',
+		build = function(max)
+			local seq = table{1, 2}
+			local nways = {0, 0, 1}
+			local count = {}
+			local u = 3
+			repeat
+				if nways[u] == 1 then
+					for j = 1, #seq do
+						local sum = u + seq[j]
+						nways[sum] = (nways[sum] or 0) + 1
+					end
+					seq[#seq+1] = u
+				end
+				u = u + 1
+			until #seq >= max	
+			return seq
+		end,
+		--map = ulam_map,
+		map = polar1,
+	},
+}
+for _,g in ipairs(generators) do
+	generators[g.name] = g
+end
+
+--local generator = generators.prime
+local generator = generators.ulam
+
+local App = class(
+	require 'glapp.orbit'(
+--		require 'imguiapp'
+		require 'glapp'
+	)
+)
+
+App.title = generator.name..' spiral'
+
+function App:initGL(...)
+	if App.super.initGL then
+		App.super.initGL(self, ...)
+	end
+	self.view.ortho = true
+	self:rebuildSequence()
+end
+
+local max = ffi.new('int[1]', 10000)
+local pointsize = ffi.new('float[1]', 3)
 
 function App:update()
 	--gl.glClearColor(1,1,1,1)
@@ -47,20 +117,15 @@ function App:update()
 		gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)	-- black background
 		--gl.glBlendFunc(gl.GL_DST_COLOR, gl.GL_ZERO)	-- white background
 		gl.glEnable(gl.GL_BLEND)
-		
+	
 		gl.glBegin(gl.GL_POINTS)
-		for n=1,tonumber(max[0]) do
-			local x, y = f(n)
+		for _,n in ipairs(self.sequence) do
+			local x, y = generator.map(n)
 			--local narms = 3.999 
 			--local narms = math.pi * math.sqrt(58)
-			--local x, y = f(n*2*math.pi/narms)
-			if n:isprime() then
-				--gl.glColor4f(0,0,0,0)
-				gl.glColor4f(1,1,1,1)
-			else
-				--gl.glColor4f(.9, .9, .9, .9)
-				gl.glColor4f(0,0,0,0)
-			end
+			--local x, y = generator.map(n*2*math.pi/narms)
+			--gl.glColor4f(0,0,0,0)
+			gl.glColor4f(1,1,1,1)
 			gl.glVertex2f(x, y)
 		end
 		gl.glEnd()
@@ -69,13 +134,19 @@ function App:update()
 	App.super.update(self)
 end
 
+function App:rebuildSequence()
+	self.call = nil
+	self.sequence = generator.build(tonumber(max[0]))
+	print('generated sequence of size '..#self.sequence)
+end
+
 function App:updateGUI()
 	ig.igText('scale: '..tostring(self.view.orthoSize))
 	if ig.igInputFloat('point size', pointsize) then
 		self.call = nil
 	end
 	if ig.igInputInt('max', max) then
-		self.call = nil
+		self:rebuildSequence()
 	end
 end
 
