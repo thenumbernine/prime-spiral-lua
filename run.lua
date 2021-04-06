@@ -1,10 +1,8 @@
 #!/usr/bin/env luajit
 local gl = require 'ffi.OpenGL'
-local ig = require 'ffi.imgui'
 local ffi = require 'ffi'
 local glCallOrRun = require 'gl.call'
 require 'ext'
-
 
 local function polar(r, theta)
 	return r * math.cos(theta), r * math.sin(theta)
@@ -69,8 +67,8 @@ local generators = table{
 			until #seq >= max	
 			return seq
 		end,
-		--map = ulam_map,
-		map = polar1,
+		map = ulam_map,
+		--map = polar1,
 	},
 }
 for _,g in ipairs(generators) do
@@ -80,22 +78,23 @@ end
 --local generator = generators.prime
 local generator = generators.ulam
 
-local App = class(
-	require 'glapp.orbit'(
---		require 'imguiapp'
-		require 'glapp'
-	)
-)
 
-App.title = generator.name..' spiral'
+local App = class(require 'glapp.orbit'(require 'imguiapp'))
+
+-- require'ing this before require'ing imguiapp causes a crash in windows
+local ig = require 'ffi.imgui'
 
 function App:initGL(...)
 	if App.super.initGL then
+		-- on Windows if require 'ffi.imgui' is called before require 'imguiapp' then this line dies: 
 		App.super.initGL(self, ...)
 	end
+
 	self.view.ortho = true
 	self:rebuildSequence()
 end
+
+App.title = generator.name..' spiral'
 
 local max = ffi.new('int[1]', 10000)
 local pointsize = ffi.new('float[1]', 3)
