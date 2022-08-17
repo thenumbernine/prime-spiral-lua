@@ -4,5 +4,11 @@ Download your favorite txt file of the digits of pi, and put it in this folder a
 
 I guess one place to look is [https://github.com/eneko/Pi/blob/master/one-million.txt]
 
+Prime spiral:
+
+![prime spiral](prime-spiral.png)
+
+Pi digit spiral:
+
 ![pi spiral](pi-spiral.png)
 

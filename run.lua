@@ -102,7 +102,7 @@ end
 
 --local generator = generators.prime
 --local generator = generators.ulam
-local generator = generators.pi_in_binary
+local generator = ... and generators[...] or generators.pi_in_binary
 
 
 local App = class(require 'glapp.orbit'(require 'imguiapp'))
