@@ -30,7 +30,10 @@ local function ulam_map(u_n)
 end
 --]]
 local function ulam_map(u)
+	-- lhs of the plane
 	return polar1(2.5714474995 * u)
+	-- 5-point spiral
+	--return polar1(2.45509 * u)
 end
 
 local generators = table{
@@ -70,13 +73,36 @@ local generators = table{
 		map = ulam_map,
 		--map = polar1,
 	},
+	{
+		name = 'pi_in_binary',
+		build = function(max)
+			local seq = table()
+			local digits = file.pi
+			for i=1,#digits do
+				local byte = digits:byte(i)
+				for j=0,7 do
+					local k = j + 8 * (i - 1)	-- k = 0-based bit index in string
+					if k >= max then break end
+					local b = bit.band(1, bit.rshift(byte, j))
+					if b == 1 then
+						seq:insert(k)
+						if #seq >= max then break end
+					end
+				end
+				if #seq >= max then break end
+			end
+			return seq
+		end,
+		map = polar1,
+	},
 }
 for _,g in ipairs(generators) do
 	generators[g.name] = g
 end
 
 --local generator = generators.prime
-local generator = generators.ulam
+--local generator = generators.ulam
+local generator = generators.pi_in_binary
 
 
 local App = class(require 'glapp.orbit'(require 'imguiapp'))
@@ -85,10 +111,8 @@ local App = class(require 'glapp.orbit'(require 'imguiapp'))
 local ig = require 'ffi.imgui'
 
 function App:initGL(...)
-	if App.super.initGL then
-		-- on Windows if require 'ffi.imgui' is called before require 'imguiapp' then this line dies: 
-		App.super.initGL(self, ...)
-	end
+	-- on Windows if require 'ffi.imgui' is called before require 'imguiapp' then this line dies: 
+	App.super.initGL(self, ...)
 
 	self.view.ortho = true
 	self:rebuildSequence()
