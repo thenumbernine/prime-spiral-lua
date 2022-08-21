@@ -108,10 +108,10 @@ local generator = ... and generators[...] or generators.pi_in_binary
 local App = class(require 'glapp.orbit'(require 'imguiapp'))
 
 -- require'ing this before require'ing imguiapp causes a crash in windows
-local ig = require 'ffi.imgui'
+local ig = require 'imgui'
 
 function App:initGL(...)
-	-- on Windows if require 'ffi.imgui' is called before require 'imguiapp' then this line dies: 
+	-- on Windows if require 'imgui' is called before require 'imguiapp' then this line dies: 
 	App.super.initGL(self, ...)
 
 	self.view.ortho = true
