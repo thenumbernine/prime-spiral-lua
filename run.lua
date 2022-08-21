@@ -1,6 +1,5 @@
 #!/usr/bin/env luajit
 local gl = require 'ffi.OpenGL'
-local ffi = require 'ffi'
 local glCallOrRun = require 'gl.call'
 require 'ext'
 
@@ -120,8 +119,10 @@ end
 
 App.title = generator.name..' spiral'
 
-local max = ffi.new('int[1]', 10000)
-local pointsize = ffi.new('float[1]', 3)
+local guivars = {
+	max = 10000,
+	pointsize = 3,
+}
 
 function App:update()
 	--gl.glClearColor(1,1,1,1)
@@ -129,7 +130,7 @@ function App:update()
 
 	self.call = self.call or {}
 	glCallOrRun(self.call, function()
-		gl.glPointSize(pointsize[0])
+		gl.glPointSize(guivars.pointsize)
 		gl.glHint(gl.GL_POINT_SMOOTH, gl.GL_NICEST)
 		gl.glHint(gl.GL_LINE_SMOOTH, gl.GL_NICEST)
 		gl.glHint(gl.GL_POLYGON_SMOOTH, gl.GL_NICEST)
@@ -159,16 +160,16 @@ end
 
 function App:rebuildSequence()
 	self.call = nil
-	self.sequence = generator.build(tonumber(max[0]))
+	self.sequence = generator.build(guivars.max)
 	print('generated sequence of size '..#self.sequence)
 end
 
 function App:updateGUI()
 	ig.igText('scale: '..tostring(self.view.orthoSize))
-	if ig.igInputFloat('point size', pointsize) then
+	if ig.luatableInputFloat('point size', guivars, 'pointsize') then
 		self.call = nil
 	end
-	if ig.igInputInt('max', max) then
+	if ig.luatableInputInt('max', guivars, 'max') then
 		self:rebuildSequence()
 	end
 end
