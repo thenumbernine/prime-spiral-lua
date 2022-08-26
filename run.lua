@@ -104,7 +104,7 @@ end
 local generator = ... and generators[...] or generators.pi_in_binary
 
 
-local App = class(require 'glapp.orbit'(require 'imguiapp'))
+local App = require 'imguiapp.withorbit'()
 
 -- require'ing this before require'ing imguiapp causes a crash in windows
 local ig = require 'imgui'
