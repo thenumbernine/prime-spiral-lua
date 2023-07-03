@@ -3,6 +3,12 @@ local gl = require 'ffi.OpenGL'
 local glCallOrRun = require 'gl.call'
 require 'ext'
 
+local App = require 'imguiapp.withorbit'()
+
+-- require'ing this before require'ing imguiapp causes a crash in windows
+local ig = require 'imgui'
+
+
 local function polar(r, theta)
 	return r * math.cos(theta), r * math.sin(theta)
 end
@@ -104,11 +110,6 @@ end
 local generator = ... and generators[...] or generators.pi_in_binary
 
 
-local App = require 'imguiapp.withorbit'()
-
--- require'ing this before require'ing imguiapp causes a crash in windows
-local ig = require 'imgui'
-
 function App:initGL(...)
 	-- on Windows if require 'imgui' is called before require 'imguiapp' then this line dies: 
 	App.super.initGL(self, ...)
@@ -174,4 +175,4 @@ function App:updateGUI()
 	end
 end
 
-App():run()
+return App():run()
