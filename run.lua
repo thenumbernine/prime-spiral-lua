@@ -1,5 +1,5 @@
 #!/usr/bin/env luajit
-local gl = require 'ffi.OpenGL'
+local gl = require 'gl'
 local glCallOrRun = require 'gl.call'
 require 'ext'
 
