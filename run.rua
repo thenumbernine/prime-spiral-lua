@@ -1,0 +1,164 @@
+#!/usr/bin/env rua
+-- rua is my lua+langfix project, runtime pure-lua solution to add lambdas to the lua syntax
+local gl = require 'gl'
+local glCallOrRun = require 'gl.call'
+local App = require 'imguiapp.withorbit'()
+
+-- require'ing this before require'ing imguiapp causes a crash in windows
+local ig = require 'imgui'
+
+local polar = [r, theta] (r * math.cos(theta), r * math.sin(theta))
+local polar1 = [u] polar(u, u)
+local _2pi = math.pi * 2
+
+local I = [...]...
+
+--local f = polar:o_n(I)
+--local f = polar1
+--local f = [n] polar(math.exp(n), n)
+--local f = [n] polar(n, math.log(n))
+--local f = [n] polar(1/n, n)
+--local f = [n] polar(n, math.pi * math.sin(n))
+
+--[[ S_n of u_n for ulam spiral, mapping (r, phi) = (u_n, S_n)
+local ulam_map = [u_n] do
+	local S_n = 2.5714474995 * u_n - _2pi * math.floor(2.5714474995 * u_n / _2pi)
+	return polar(u_n, S_n)
+end
+--]]
+local ulam_map = [u] polar1(2.5714474995 * u)		-- lhs of the plane
+--local ulam_map = [u] polar1(2.45509 * u)		-- 5-point spiral
+
+local generators = table{
+	{
+		name = 'prime',
+		build = [max] do
+			local seq = table()
+			for n=1,math.huge do
+				if n:isprime() then
+					seq:insert(n)
+					if #seq >= max then break end
+				end
+			end
+			return seq
+		end,
+		map = polar1,
+	},
+	{
+		name = 'ulam',
+		build = [max] do
+			local seq = table{1, 2}
+			local nways = {0, 0, 1}
+			local count = {}
+			local u = 3
+			repeat
+				if nways[u] == 1 then
+					for j = 1, #seq do
+						local sum = u + seq[j]
+						nways[sum] = (nways[sum] or 0) + 1
+					end
+					seq[#seq+1] = u
+				end
+				u += 1
+			until #seq >= max	
+			return seq
+		end,
+		map = ulam_map,
+		--map = polar1,
+	},
+	{
+		name = 'pi_in_binary',
+		build = [max] do
+			local seq = table()
+			local digits = path'pi':read()
+			for i=0,#digits-1 do
+				local byte = digits:byte(i+1)
+				for j=0,7 do
+					local k = j | i << 3	-- k = 0-based bit index in string
+					if k >= max then break end
+					if (byte >> j) & 1 == 1 then
+						seq:insert(k)
+						if #seq >= max then break end
+					end
+				end
+				if #seq >= max then break end
+			end
+			return seq
+		end,
+		map = polar1,
+	},
+}
+for _,g in ipairs(generators) do
+	generators[g.name] = g
+end
+
+--local generator = generators.prime
+--local generator = generators.ulam
+local generator = ... and generators[...] or generators.pi_in_binary
+
+App.initGL = [:, ...] do
+	-- on Windows if require 'imgui' is called before require 'imguiapp' then this line dies: 
+	App.super.initGL(self, ...)
+
+	self.view.ortho = true
+	self:rebuildSequence()
+end
+
+App.title = generator.name..' spiral'
+
+local guivars = {
+	max = 10000,
+	pointsize = 3,
+}
+
+App.update = [:] do
+	--gl.glClearColor(1,1,1,1)
+	gl.glClear(gl.GL_COLOR_BUFFER_BIT + gl.GL_DEPTH_BUFFER_BIT)
+
+	self.call = self.call or {}
+	glCallOrRun(self.call, [] do
+		gl.glPointSize(guivars.pointsize)
+		gl.glHint(gl.GL_POINT_SMOOTH, gl.GL_NICEST)
+		gl.glHint(gl.GL_LINE_SMOOTH, gl.GL_NICEST)
+		gl.glHint(gl.GL_POLYGON_SMOOTH, gl.GL_NICEST)
+		gl.glEnable(gl.GL_POINT_SMOOTH)
+		gl.glEnable(gl.GL_LINE_SMOOTH)
+		gl.glEnable(gl.GL_POLYGON_SMOOTH)
+		
+		gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)	-- black background
+		--gl.glBlendFunc(gl.GL_DST_COLOR, gl.GL_ZERO)	-- white background
+		gl.glEnable(gl.GL_BLEND)
+	
+		gl.glBegin(gl.GL_POINTS)
+		for _,n in ipairs(self.sequence) do
+			local x, y = generator.map(n)
+			--local narms = 3.999 
+			--local narms = math.pi * math.sqrt(58)
+			--local x, y = generator.map(n*2*math.pi/narms)
+			--gl.glColor4f(0,0,0,0)
+			gl.glColor4f(1,1,1,1)
+			gl.glVertex2f(x, y)
+		end
+		gl.glEnd()
+	end)
+
+	App.super.update(self)
+end
+
+App.rebuildSequence = [:] do
+	self.call = nil
+	self.sequence = generator.build(guivars.max)
+	print('generated sequence of size '..#self.sequence)
+end
+
+App.updateGUI = [:] do
+	ig.igText('scale: '..tostring(self.view.orthoSize))
+	if ig.luatableInputFloat('point size', guivars, 'pointsize') then
+		self.call = nil
+	end
+	if ig.luatableInputInt('max', guivars, 'max') then
+		self:rebuildSequence()
+	end
+end
+
+return App():run()
