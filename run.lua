@@ -1,9 +1,13 @@
 #!/usr/bin/env luajit
+local table = require 'ext.table'
+local path = require 'ext.path'
+local ffi = require 'ffi'
 local gl = require 'gl'
-local glCallOrRun = require 'gl.call'
-require 'ext'
+local vector = require 'ffi.cpp.vector-lua'
+local vec2f = require 'vec-ffi.vec2f'
 
 local App = require 'imguiapp.withorbit'()
+App.viewUseBuiltinMatrixMath = true
 
 -- require'ing this before require'ing imguiapp causes a crash in windows
 local ig = require 'imgui'
@@ -127,49 +131,72 @@ local guivars = {
 
 function App:update()
 	--gl.glClearColor(1,1,1,1)
-	gl.glClear(gl.GL_COLOR_BUFFER_BIT + gl.GL_DEPTH_BUFFER_BIT)
+	gl.glClear(bit.bor(gl.GL_COLOR_BUFFER_BIT, gl.GL_DEPTH_BUFFER_BIT))
 
-	self.call = self.call or {}
-	glCallOrRun(self.call, function()
-		gl.glPointSize(guivars.pointsize)
-		gl.glHint(gl.GL_POINT_SMOOTH, gl.GL_NICEST)
-		gl.glHint(gl.GL_LINE_SMOOTH, gl.GL_NICEST)
-		gl.glHint(gl.GL_POLYGON_SMOOTH, gl.GL_NICEST)
-		gl.glEnable(gl.GL_POINT_SMOOTH)
-		gl.glEnable(gl.GL_LINE_SMOOTH)
-		gl.glEnable(gl.GL_POLYGON_SMOOTH)
-		
-		gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)	-- black background
-		--gl.glBlendFunc(gl.GL_DST_COLOR, gl.GL_ZERO)	-- white background
-		gl.glEnable(gl.GL_BLEND)
-	
-		gl.glBegin(gl.GL_POINTS)
-		for _,n in ipairs(self.sequence) do
-			local x, y = generator.map(n)
-			--local narms = 3.999 
-			--local narms = math.pi * math.sqrt(58)
-			--local x, y = generator.map(n*2*math.pi/narms)
-			--gl.glColor4f(0,0,0,0)
-			gl.glColor4f(1,1,1,1)
-			gl.glVertex2f(x, y)
-		end
-		gl.glEnd()
-	end)
+	gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)	-- black background
+	--gl.glBlendFunc(gl.GL_DST_COLOR, gl.GL_ZERO)	-- white background
+	gl.glEnable(gl.GL_BLEND)
+
+	self.sceneobj.uniforms.pointsize = guivars.pointsize;
+	self.sceneobj.uniforms.mvProjMat = self.view.mvProjMat.ptr
+	self.sceneobj:draw()
 
 	App.super.update(self)
 end
 
 function App:rebuildSequence()
-	self.call = nil
 	self.sequence = generator.build(guivars.max)
 	print('generated sequence of size '..#self.sequence)
+
+	self.vtxCPUBuf = vector'vec2f_t'	-- don't gc
+
+	for _,n in ipairs(self.sequence) do
+		local x, y = generator.map(n)
+		--local narms = 3.999 
+		--local narms = math.pi * math.sqrt(58)
+		--local x, y = generator.map(n*2*math.pi/narms)
+		self.vtxCPUBuf:emplace_back()[0]:set(x, y)
+	end
+
+	-- TODO reuse the buffer upon adjusting the size
+	self.sceneobj = require 'gl.sceneobject'{
+		program = {
+			version = 'latest',
+			header = 'precision highp float;',
+			vertexCode = [[
+in vec2 vtx;
+uniform mat4 mvProjMat;
+uniform float pointsize;
+void main() {
+	gl_PointSize = pointsize;
+	gl_Position = mvProjMat * vec4(vtx, 0., 1.);
+}
+]],
+			fragmentCode = [[
+out vec4 fragColor;
+void main() {
+	fragColor = vec4(1., 1., 1., 1.);
+}
+]],
+		},
+		geometry = {
+			mode = gl.GL_POINTS,
+			count = #self.vtxCPUBuf,
+		},
+		attrs = {
+			vtx = {
+				buffer = {
+					data = self.vtxCPUBuf.v,
+					size = ffi.sizeof'vec2f_t' * #self.vtxCPUBuf,
+				},
+			},
+		},
+	}
 end
 
 function App:updateGUI()
 	ig.igText('scale: '..tostring(self.view.orthoSize))
-	if ig.luatableInputFloat('point size', guivars, 'pointsize') then
-		self.call = nil
-	end
+	ig.luatableInputFloat('point size', guivars, 'pointsize')
 	if ig.luatableInputInt('max', guivars, 'max') then
 		self:rebuildSequence()
 	end
