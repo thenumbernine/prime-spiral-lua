@@ -164,12 +164,12 @@ function App:rebuildSequence()
 			version = 'latest',
 			header = 'precision highp float;',
 			vertexCode = [[
-in vec2 vtx;
+in vec2 vertex;
 uniform mat4 mvProjMat;
 uniform float pointsize;
 void main() {
 	gl_PointSize = pointsize;
-	gl_Position = mvProjMat * vec4(vtx, 0., 1.);
+	gl_Position = mvProjMat * vec4(vertex, 0., 1.);
 }
 ]],
 			fragmentCode = [[
@@ -179,17 +179,14 @@ void main() {
 }
 ]],
 		},
+		vertexes = {
+			data = self.vtxCPUBuf.v,
+			size = ffi.sizeof'vec2f_t' * #self.vtxCPUBuf,
+			count = #self.vtxCPUBuf,
+			dim = 2,
+		},
 		geometry = {
 			mode = gl.GL_POINTS,
-			count = #self.vtxCPUBuf,
-		},
-		attrs = {
-			vtx = {
-				buffer = {
-					data = self.vtxCPUBuf.v,
-					size = ffi.sizeof'vec2f_t' * #self.vtxCPUBuf,
-				},
-			},
 		},
 	}
 end
