@@ -133,6 +133,8 @@ function App:update()
 	--gl.glClearColor(1,1,1,1)
 	gl.glClear(bit.bor(gl.GL_COLOR_BUFFER_BIT, gl.GL_DEPTH_BUFFER_BIT))
 
+	self.view.orthoSize = 2000
+
 	gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)	-- black background
 	--gl.glBlendFunc(gl.GL_DST_COLOR, gl.GL_ZERO)	-- white background
 	gl.glEnable(gl.GL_BLEND)
