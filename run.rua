@@ -103,6 +103,8 @@ App.initGL = [:, ...] do
 	App.super.initGL(self, ...)
 
 	self.view.ortho = true
+	self.view.orthoSize = 2000
+
 	self:rebuildSequence()
 end
 
