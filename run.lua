@@ -164,7 +164,7 @@ function App:rebuildSequence()
 	self.sceneobj = require 'gl.sceneobject'{
 		program = {
 			version = 'latest',
-			header = 'precision highp float;',
+			precision = 'best',
 			vertexCode = [[
 in vec2 vertex;
 uniform mat4 mvProjMat;
