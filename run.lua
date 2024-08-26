@@ -7,7 +7,6 @@ local vector = require 'ffi.cpp.vector-lua'
 local vec2f = require 'vec-ffi.vec2f'
 
 local App = require 'imguiapp.withorbit'()
-App.viewUseBuiltinMatrixMath = true
 
 -- require'ing this before require'ing imguiapp causes a crash in windows
 local ig = require 'imgui'
