@@ -1,0 +1,18 @@
+name = "prime-spiral"
+files = {
+	["README.md"] = "prime-spiral/README.md",
+	["pi"] = "prime-spiral/pi",
+	["pi-spiral.png"] = "prime-spiral/pi-spiral.png",
+	["prime-spiral-dev-1.rockspec"] = "prime-spiral/prime-spiral-dev-1.rockspec",
+	["prime-spiral.png"] = "prime-spiral/prime-spiral.png",
+	["run.lua"] = "prime-spiral/run.lua",
+	["run.rua"] = "prime-spiral/run.rua",
+	["ulam-spiral.png"] = "prime-spiral/ulam-spiral.png",
+}
+deps = {
+	"ext",
+	"ffi",
+	"gl",
+	"imgui",
+	"vec-ffi",
+}
