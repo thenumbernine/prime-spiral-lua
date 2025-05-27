@@ -8,32 +8,32 @@ local App = require 'imgui.appwithorbit'()
 -- require'ing this before require'ing imguiapp causes a crash in windows
 local ig = require 'imgui'
 
-local polar = [r, theta] (r * math.cos(theta), r * math.sin(theta))
-local polar1 = [u] polar(u, u)
+local polar = |r, theta| (r * math.cos(theta), r * math.sin(theta))
+local polar1 = |u| polar(u, u)
 local _2pi = math.pi * 2
 
-local I = [...]...
+local I = |...|...
 
 --local f = polar:o_n(I)
 --local f = polar1
---local f = [n] polar(math.exp(n), n)
---local f = [n] polar(n, math.log(n))
---local f = [n] polar(1/n, n)
---local f = [n] polar(n, math.pi * math.sin(n))
+--local f = |n| polar(math.exp(n), n)
+--local f = |n| polar(n, math.log(n))
+--local f = |n| polar(1/n, n)
+--local f = |n| polar(n, math.pi * math.sin(n))
 
 --[[ S_n of u_n for ulam spiral, mapping (r, phi) = (u_n, S_n)
-local ulam_map = [u_n] do
+local ulam_map = |u_n| do
 	local S_n = 2.5714474995 * u_n - _2pi * math.floor(2.5714474995 * u_n / _2pi)
 	return polar(u_n, S_n)
 end
 --]]
-local ulam_map = [u] polar1(2.5714474995 * u)		-- lhs of the plane
---local ulam_map = [u] polar1(2.45509 * u)		-- 5-point spiral
+local ulam_map = |u| polar1(2.5714474995 * u)		-- lhs of the plane
+--local ulam_map = |u| polar1(2.45509 * u)		-- 5-point spiral
 
 local generators = table{
 	{
 		name = 'prime',
-		build = [max] do
+		build = |max| do
 			local seq = table()
 			for n=1,math.huge do
 				if n:isprime() then
@@ -47,7 +47,7 @@ local generators = table{
 	},
 	{
 		name = 'ulam',
-		build = [max] do
+		build = |max| do
 			local seq = table{1, 2}
 			local nways = {0, 0, 1}
 			local count = {}
@@ -69,7 +69,7 @@ local generators = table{
 	},
 	{
 		name = 'pi_in_binary',
-		build = [max] do
+		build = |max| do
 			local seq = table()
 			local digits = path'pi':read()
 			for i=0,#digits-1 do
@@ -97,7 +97,7 @@ end
 --local generator = generators.ulam
 local generator = ... and generators[...] or generators.pi_in_binary
 
-App.initGL = [:, ...] do
+App.initGL = |:, ...| do
 	-- on Windows if require 'imgui' is called before require 'imguiapp' then this line dies: 
 	App.super.initGL(self, ...)
 
@@ -114,7 +114,7 @@ local guivars = {
 	pointsize = 3,
 }
 
-App.update = [:] do
+App.update = |:| do
 	--gl.glClearColor(1,1,1,1)
 	gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
@@ -129,7 +129,7 @@ App.update = [:] do
 	App.super.update(self)
 end
 
-App.rebuildSequence = [:] do
+App.rebuildSequence = |:| do
 	self.sequence = generator.build(guivars.max)
 	print('generated sequence of size '..#self.sequence)
 
@@ -176,7 +176,7 @@ void main() {
 	}
 end
 
-App.updateGUI = [:] do
+App.updateGUI = |:| do
 	ig.igText('scale: '..tostring(self.view.orthoSize))
 	ig.luatableInputFloat('point size', guivars, 'pointsize')
 	if ig.luatableInputInt('max', guivars, 'max') then
